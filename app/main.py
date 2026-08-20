@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 import strawberry
 from strawberry.fastapi import GraphQLRouter
-from app.polling import fetch_supplier_inventory
 from app.inventory import inventory_ledger, processed_events
 
 
@@ -63,14 +62,7 @@ def home():
     return {
         "message": "Supplier Inventory GraphQL API is running"
     }
-@app.get("/poll")
-def poll_supplier():
-    inventory = fetch_supplier_inventory()
 
-    return {
-        "message": "Supplier inventory fetched successfully",
-        "inventory": inventory
-    }
 # Webhook endpoint for supplier inventory updates
 @app.post("/webhook/inventory")
 async def inventory_webhook(data: dict):
