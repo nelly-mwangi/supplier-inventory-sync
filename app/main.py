@@ -3,6 +3,9 @@ import strawberry
 from strawberry.fastapi import GraphQLRouter
 from app.polling import fetch_supplier_inventory
 
+# Track webhook events that have already been processed
+processed_events = set()
+
 # Product data
 products = [
     {
@@ -96,6 +99,15 @@ def poll_supplier():
 @app.post("/webhook/inventory")
 async def inventory_webhook(data: dict):
 
+    # Get the unique event ID
+    event_id = data.get("event_id")
+
+    # Check if this event was already processed
+    if event_id in processed_events:
+        return {
+            "message": "Duplicate event ignored"
+        }
+
     sku = data.get("sku")
     name = data.get("name")
     quantity = data.get("quantity")
@@ -107,6 +119,9 @@ async def inventory_webhook(data: dict):
             product["name"] = name
             product["quantity"] = quantity
             product["status"] = status
+
+            # Remember that this event has been processed
+            processed_events.add(event_id)
 
             return {
                 "message": "Inventory updated successfully",
