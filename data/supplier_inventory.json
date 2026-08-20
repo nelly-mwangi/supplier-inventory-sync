@@ -1,0 +1,20 @@
+[
+  {
+    "sku": "SKU001",
+    "name": "Wireless Mouse",
+    "quantity": 25,
+    "status": "in_stock"
+  },
+  {
+    "sku": "SKU002",
+    "name": "Laptop Stand",
+    "quantity": 5,
+    "status": "in_stock"
+  },
+  {
+    "sku": "SKU003",
+    "name": "Keyboard",
+    "quantity": 0,
+    "status": "out_of_stock"
+  }
+]

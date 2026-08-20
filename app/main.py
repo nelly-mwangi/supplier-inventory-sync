@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 import strawberry
 from strawberry.fastapi import GraphQLRouter
-
+from app.polling import fetch_supplier_inventory
 
 # Product data
 products = [
@@ -83,4 +83,12 @@ app.include_router(graphql_app, prefix="/graphql")
 def home():
     return {
         "message": "Supplier Inventory GraphQL API is running"
+    }
+@app.get("/poll")
+def poll_supplier():
+    inventory = fetch_supplier_inventory()
+
+    return {
+        "message": "Supplier inventory fetched successfully",
+        "inventory": inventory
     }
