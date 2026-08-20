@@ -18,29 +18,3 @@
     "status": "out_of_stock"
   }
 ]
-# Webhook endpoint for supplier inventory updates
-@app.post("/webhook/inventory")
-async def inventory_webhook(data: dict):
-
-    sku = data.get("sku")
-    name = data.get("name")
-    quantity = data.get("quantity")
-    status = data.get("status")
-
-    # Find the product in the current inventory
-    for product in products:
-        if product["sku"] == sku:
-            product["name"] = name
-            product["quantity"] = quantity
-            product["status"] = status
-
-            return {
-                "message": "Inventory updated successfully",
-                "sku": sku,
-                "status": status
-            }
-
-    return {
-        "message": "Product not found",
-        "sku": sku
-    }

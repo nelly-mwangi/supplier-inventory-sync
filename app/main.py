@@ -2,31 +2,7 @@ from fastapi import FastAPI
 import strawberry
 from strawberry.fastapi import GraphQLRouter
 from app.polling import fetch_supplier_inventory
-
-# Track webhook events that have already been processed
-processed_events = set()
-
-# Product data
-products = [
-    {
-        "sku": "SKU001",
-        "name": "Wireless Mouse",
-        "quantity": 25,
-        "status": "in_stock"
-    },
-    {
-        "sku": "SKU002",
-        "name": "Laptop Stand",
-        "quantity": 5,
-        "status": "in_stock"
-    },
-    {
-        "sku": "SKU003",
-        "name": "Keyboard",
-        "quantity": 0,
-        "status": "out_of_stock"
-    }
-]
+from app.inventory import inventory_ledger, processed_events
 
 
 # GraphQL Product type
@@ -51,22 +27,22 @@ class Query:
                 quantity=product["quantity"],
                 status=product["status"]
             )
-            for product in products
+            for product in inventory_ledger.values()
         ]
 
     @strawberry.field
     def product(self, sku: str) -> Product | None:
-        for product in products:
-            if product["sku"] == sku:
-                return Product(
-                    sku=product["sku"],
-                    name=product["name"],
-                    quantity=product["quantity"],
-                    status=product["status"]
-                )
+        product = inventory_ledger.get(sku)
+
+        if product:
+            return Product(
+                sku=product["sku"],
+                name=product["name"],
+                quantity=product["quantity"],
+                status=product["status"]
+            )
 
         return None
-
 
 # Create GraphQL schema
 schema = strawberry.Schema(query=Query)
@@ -99,7 +75,6 @@ def poll_supplier():
 @app.post("/webhook/inventory")
 async def inventory_webhook(data: dict):
 
-    # Get the unique event ID
     event_id = data.get("event_id")
 
     # Check if this event was already processed
@@ -109,25 +84,26 @@ async def inventory_webhook(data: dict):
         }
 
     sku = data.get("sku")
-    name = data.get("name")
-    quantity = data.get("quantity")
-    status = data.get("status")
+    new_status = data.get("status")
+    new_quantity = data.get("quantity")
 
-    # Find the product in the current inventory
-    for product in products:
-        if product["sku"] == sku:
-            product["name"] = name
-            product["quantity"] = quantity
-            product["status"] = status
+    # Find the product in the central inventory ledger
+    product = inventory_ledger.get(sku)
 
-            # Remember that this event has been processed
-            processed_events.add(event_id)
+    if product:
+        # Update the shared inventory ledger
+        product["status"] = new_status
+        product["quantity"] = new_quantity
 
-            return {
-                "message": "Inventory updated successfully",
-                "sku": sku,
-                "status": status
-            }
+        # Remember the processed event
+        processed_events.add(event_id)
+
+        return {
+            "message": "Inventory updated successfully",
+            "sku": sku,
+            "status": new_status,
+            "quantity": new_quantity
+        }
 
     return {
         "message": "Product not found",
